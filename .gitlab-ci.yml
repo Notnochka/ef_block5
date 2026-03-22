@@ -1,0 +1,18 @@
+default:
+  cache:
+    paths:
+      - vendor/
+
+before_script:
+  - apt-get update -qq && apt-get install -y wget unzip
+  - wget https://getcomposer.org/installer -O composer-installer
+  - php composer-installer --install-dir=/usr/local/bin --filename=composer
+  - rm composer-installer
+  - composer install --no-progress --no-interaction --prefer-dist
+
+test:
+  image: php:8.4-cli
+  script:
+    - ./vendor/bin/phpunit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
