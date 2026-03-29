@@ -1,20 +1,25 @@
-version: '3.8'
-
 services:
   app:
     build: .
     container_name: php_app
-    volumes:
-      - .:/app
     ports:
       - "8080:80"
+    volumes:
+      - ./unit:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: app_db
+      DB_USERNAME: user
+      DB_PASSWORD: password
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
     container_name: mysql_db
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: app_db
@@ -24,6 +29,13 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
 volumes:
   db_data:

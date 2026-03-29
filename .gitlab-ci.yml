@@ -1,18 +1,29 @@
-default:
-  cache:
-    paths:
-      - vendor/
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
-before_script:
-  - apt-get update -qq && apt-get install -y wget unzip
-  - wget https://getcomposer.org/installer -O composer-installer
-  - php composer-installer --install-dir=/usr/local/bin --filename=composer
-  - rm composer-installer
-  - composer install --no-progress --no-interaction --prefer-dist
+stages:
+  - test
+
+variables:
+  COMPOSER_ALLOW_SUPERUSER: 1
+
+default:
+  image: php:8.4-cli
+  cache:
+    key:
+      files:
+        - unit/composer.lock
+    paths:
+      - unit/vendor/
 
 test:
-  image: php:8.4-cli
+  stage: test
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git unzip libzip-dev libsqlite3-dev
+    - docker-php-ext-configure zip && docker-php-ext-install -j"$(nproc)" zip pdo_sqlite
+    - curl -fsSL https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    - cd "${CI_PROJECT_DIR}/unit" && composer install --prefer-dist --no-progress --no-interaction
+    - mkdir -p "${CI_PROJECT_DIR}/unit/database"
   script:
-    - ./vendor/bin/phpunit
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
+    - cd "${CI_PROJECT_DIR}/unit" && ./vendor/bin/phpunit --configuration phpunit.xml

@@ -2,8 +2,6 @@
 
 namespace App;
 
-use App\Repositories\UserRepository;
-
 class UserService
 {
     public function __construct(
